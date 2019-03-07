@@ -278,7 +278,7 @@ function convertHTML(blot, index, length, isRoot = false) {
           offset,
           length: childLength,
           indent: formats.indent || 0,
-          type: formats.list,
+          type: (formats.smarttask) ? 'smarttask' : formats.list,
         });
       });
       return convertListHTML(items, -1, []);
@@ -287,7 +287,7 @@ function convertHTML(blot, index, length, isRoot = false) {
     blot.children.forEachAt(index, length, (child, offset, childLength) => {
       parts.push(convertHTML(child, offset, childLength));
     });
-    if (isRoot || blot.statics.blotName === 'list') {
+    if (isRoot || blot.statics.blotName === 'list' || blot.statics.blotName === 'smarttask') {
       return parts.join('');
     }
     const { outerHTML, innerHTML } = blot.domNode;
@@ -318,8 +318,10 @@ function combineFormats(formats, combined) {
 }
 
 function getListType(type) {
-  const tag = type === 'ordered' ? 'ol' : 'ul';
+  const tag = (type === 'ordered') ? 'ol' : 'ul';
   switch (type) {
+    case 'smarttask':
+      return ['ol', ' class="smarttask"'];
     case 'checked':
       return [tag, ' data-list="checked"'];
     case 'unchecked':

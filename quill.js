@@ -10,7 +10,7 @@ import Indent from './formats/indent';
 
 import Blockquote from './formats/blockquote';
 import Header from './formats/header';
-import List from './formats/list';
+import List, { ListContainer } from './formats/list';
 
 import { BackgroundClass, BackgroundStyle } from './formats/background';
 import { ColorClass, ColorStyle } from './formats/color';
@@ -42,9 +42,13 @@ import Tooltip from './ui/tooltip';
 
 import BubbleTheme from './themes/bubble';
 import SnowTheme from './themes/snow';
+import { ClassAttributor, StyleAttributor } from 'parchment';
 
 Quill.register(
   {
+    'attributors/class': ClassAttributor,
+    'attributors/style': StyleAttributor,
+
     'attributors/attribute/direction': DirectionAttribute,
 
     'attributors/class/align': AlignClass,
@@ -79,6 +83,7 @@ Quill.register(
     'formats/code-block': CodeBlock,
     'formats/header': Header,
     'formats/list': List,
+    'formats/listcontainer': ListContainer,
 
     'formats/bold': Bold,
     'formats/code': InlineCode,

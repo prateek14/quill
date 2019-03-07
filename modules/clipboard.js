@@ -217,6 +217,9 @@ function applyFormat(delta, format, value) {
     if (op.attributes && op.attributes[format]) {
       return newDelta.push(op);
     }
+    if (op.attributes && op.attributes.smarttask && format === 'list') {
+      return newDelta.push(op);
+    }
     return newDelta.insert(
       op.insert,
       extend({}, { [format]: value }, op.attributes),
