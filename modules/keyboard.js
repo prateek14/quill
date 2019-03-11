@@ -34,7 +34,7 @@ class Keyboard extends Module {
     this.addBinding({ key: 'Enter', shiftKey: null }, handleEnter);
     this.addBinding(
       { key: 'Enter', metaKey: null, ctrlKey: null, altKey: null },
-      () => {},
+      () => { },
     );
     if (/Firefox/i.test(navigator.userAgent)) {
       // Need to handle delete and backspace for Firefox in the general case #1171
@@ -310,14 +310,14 @@ Keyboard.DEFAULTS = {
       format: ['table'],
       collapsed: true,
       offset: 0,
-      handler() {},
+      handler() { },
     },
     'table delete': {
       key: 'Delete',
       format: ['table'],
       collapsed: true,
       suffix: /^$/,
-      handler() {},
+      handler() { },
     },
     'table enter': {
       key: 'Enter',
@@ -532,6 +532,11 @@ function handleEnter(range, context) {
     }
     return formats;
   }, {});
+  
+  if (lineFormats && lineFormats.smarttask) {
+    lineFormats.smarttask = {};
+  }
+
   this.quill.insertText(range.index, '\n', lineFormats, Quill.sources.USER);
   // Earlier scroll.deleteAt might have messed up our selection,
   // so insertText's built in selection preservation is not reliable
