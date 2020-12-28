@@ -533,7 +533,7 @@ function handleEnter(range, context) {
     return formats;
   }, {});
   
-  if (lineFormats && lineFormats.smarttask) {
+  if (lineFormats && lineFormats.smarttask && context.offset === 0) {
     lineFormats.smarttask = {};
   }
 
