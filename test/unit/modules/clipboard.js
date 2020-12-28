@@ -34,6 +34,7 @@ describe('Clipboard', function() {
       it('pastes html data if present with file', function(done) {
         const upload = spyOn(this.quill.uploader, 'upload');
         this.quill.clipboard.onCapturePaste(
+          // eslint-disable-next-line prefer-object-spread
           Object.assign({}, this.clipboardEvent, { files: ['file '] }),
         );
         setTimeout(() => {
@@ -178,27 +179,54 @@ describe('Clipboard', function() {
 
     it('html nested list', function() {
       const delta = this.clipboard.convert({
-        html: '<ol><li>One<ol><li>Alpha</li><li>Beta</li></ol></li></ol>',
+        html:
+          '<ol><li>One<ol><li>Alpha</li><li>Beta<ol><li>I</li></ol></li></ol></li></ol>',
       });
       expect(delta).toEqual(
         new Delta()
-          .insert('One\nAlpha', { list: 'ordered' })
-          .insert('\n', { list: 'ordered', indent: 1 })
-          .insert('Beta', { list: 'ordered' })
-          .insert('\n', { list: 'ordered', indent: 1 }),
+          .insert('One\n', { list: 'ordered' })
+          .insert('Alpha\nBeta\n', { list: 'ordered', indent: 1 })
+          .insert('I\n', { list: 'ordered', indent: 2 }),
       );
     });
 
     it('html nested bullet', function() {
       const delta = this.clipboard.convert({
-        html: '<ul><li>One<ul><li>Alpha</li><li>Beta</li></ul></li></ul>',
+        html:
+          '<ul><li>One<ul><li>Alpha</li><li>Beta<ul><li>I</li></ul></li></ul></li></ul>',
       });
       expect(delta).toEqual(
         new Delta()
-          .insert('One\nAlpha', { list: 'bullet' })
-          .insert('\n', { list: 'bullet', indent: 1 })
-          .insert('Beta', { list: 'bullet' })
-          .insert('\n', { list: 'bullet', indent: 1 }),
+          .insert('One\n', { list: 'bullet' })
+          .insert('Alpha\nBeta\n', { list: 'bullet', indent: 1 })
+          .insert('I\n', { list: 'bullet', indent: 2 }),
+      );
+    });
+
+    it('html nested checklist', function() {
+      const delta = this.clipboard.convert({
+        html:
+          '<ul><li data-list="checked">One<ul><li data-list="checked">Alpha</li><li data-list="checked">Beta' +
+          '<ul><li data-list="checked">I</li></ul></li></ul></li></ul>',
+      });
+      expect(delta).toEqual(
+        new Delta()
+          .insert('One\n', { list: 'checked' })
+          .insert('Alpha\nBeta\n', { list: 'checked', indent: 1 })
+          .insert('I\n', { list: 'checked', indent: 2 }),
+      );
+    });
+
+    it('html partial list', function() {
+      const delta = this.clipboard.convert({
+        html:
+          '<ol><li><ol><li><ol><li>iiii</li></ol></li><li>bbbb</li></ol></li><li>2222</li></ol>',
+      });
+      expect(delta).toEqual(
+        new Delta()
+          .insert('iiii\n', { list: 'ordered', indent: 2 })
+          .insert('bbbb\n', { list: 'ordered', indent: 1 })
+          .insert('2222\n', { list: 'ordered' }),
       );
     });
 
@@ -241,6 +269,48 @@ describe('Clipboard', function() {
           .insert('01\n')
           .insert({ video: '#' })
           .insert('34'),
+      );
+    });
+
+    it('block embeds within blocks', function() {
+      const delta = this.clipboard.convert({
+        html: '<h1>01<iframe src="#"></iframe>34</h1><p>67</p>',
+      });
+      expect(delta).toEqual(
+        new Delta()
+          .insert('01\n', { header: 1 })
+          .insert({ video: '#' }, { header: 1 })
+          .insert('34\n', { header: 1 })
+          .insert('67'),
+      );
+    });
+
+    it('wrapped block embed', function() {
+      const delta = this.clipboard.convert({
+        html: '<h1>01<a href="/"><iframe src="#"></iframe></a>34</h1><p>67</p>',
+      });
+      expect(delta).toEqual(
+        new Delta()
+          .insert('01\n', { header: 1 })
+          .insert({ video: '#' }, { link: '/', header: 1 })
+          .insert('34\n', { header: 1 })
+          .insert('67'),
+      );
+    });
+
+    it('wrapped block embed with siblings', function() {
+      const delta = this.clipboard.convert({
+        html:
+          '<h1>01<a href="/">a<iframe src="#"></iframe>b</a>34</h1><p>67</p>',
+      });
+      expect(delta).toEqual(
+        new Delta()
+          .insert('01', { header: 1 })
+          .insert('a\n', { link: '/', header: 1 })
+          .insert({ video: '#' }, { link: '/', header: 1 })
+          .insert('b', { link: '/', header: 1 })
+          .insert('34\n', { header: 1 })
+          .insert('67'),
       );
     });
 

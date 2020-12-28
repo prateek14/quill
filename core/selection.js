@@ -1,6 +1,6 @@
 import { LeafBlot, Scope } from 'parchment';
-import clone from 'clone';
-import equal from 'deep-equal';
+import cloneDeep from 'lodash.clonedeep';
+import isEqual from 'lodash.isequal';
 import Emitter from './emitter';
 import logger from './logger';
 
@@ -24,6 +24,7 @@ class Selection {
     // savedRange is last non-null range
     this.savedRange = new Range(0, 0);
     this.lastRange = this.savedRange;
+    this.lastNative = null;
     this.handleComposition();
     this.handleDragging();
     this.emitter.listenDOM('selectionchange', document, () => {
@@ -372,10 +373,11 @@ class Selection {
     const oldRange = this.lastRange;
     const [lastRange, nativeRange] = this.getRange();
     this.lastRange = lastRange;
+    this.lastNative = nativeRange;
     if (this.lastRange != null) {
       this.savedRange = this.lastRange;
     }
-    if (!equal(oldRange, this.lastRange)) {
+    if (!isEqual(oldRange, this.lastRange)) {
       if (
         !this.composing &&
         nativeRange != null &&
@@ -394,8 +396,8 @@ class Selection {
       }
       const args = [
         Emitter.events.SELECTION_CHANGE,
-        clone(this.lastRange),
-        clone(oldRange),
+        cloneDeep(this.lastRange),
+        cloneDeep(oldRange),
         source,
       ];
       this.emitter.emit(Emitter.events.EDITOR_CHANGE, ...args);
