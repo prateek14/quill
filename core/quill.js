@@ -1,6 +1,7 @@
 import Delta from 'quill-delta';
+import cloneDeep from 'lodash.clonedeep';
+import merge from 'lodash.merge';
 import * as Parchment from 'parchment';
-import extend from 'extend';
 import Editor from './editor';
 import Emitter from './emitter';
 import Module from './module';
@@ -75,11 +76,7 @@ class Quill {
     this.container.innerHTML = '';
     instances.set(this.container, this);
     this.root = this.addContainer('ql-editor');
-    this.root.addEventListener('dragstart', e => {
-      e.preventDefault();
-    });
     this.root.classList.add('ql-blank');
-    this.root.setAttribute('data-gramm', false);
     this.scrollingContainer = this.options.scrollingContainer || this.root;
     this.emitter = new Emitter();
     const ScrollBlot = this.options.registry.query(
@@ -386,18 +383,13 @@ class Quill {
       () => {
         delta = new Delta(delta);
         const length = this.getLength();
-        const deleted = this.editor.deleteText(0, length);
+        // Quill will set empty editor to \n
+        const delete1 = this.editor.deleteText(0, length);
+        // delta always applied before existing content
         const applied = this.editor.applyDelta(delta);
-        const lastOp = applied.ops[applied.ops.length - 1];
-        if (
-          lastOp != null &&
-          typeof lastOp.insert === 'string' &&
-          lastOp.insert[lastOp.insert.length - 1] === '\n'
-        ) {
-          this.editor.deleteText(this.getLength() - 1, 1);
-          applied.delete(1);
-        }
-        return deleted.compose(applied);
+        // Remove extra \n from empty editor initialization
+        const delete2 = this.editor.deleteText(this.getLength() - 1, 1);
+        return delete1.compose(applied).compose(delete2);
       },
       source,
     );
@@ -461,8 +453,7 @@ Quill.imports = {
 };
 
 function expandConfig(container, userConfig) {
-  userConfig = extend(
-    true,
+  userConfig = merge(
     {
       container,
       modules: {
@@ -484,7 +475,7 @@ function expandConfig(container, userConfig) {
       );
     }
   }
-  const themeConfig = extend(true, {}, userConfig.theme.DEFAULTS);
+  const themeConfig = cloneDeep(userConfig.theme.DEFAULTS);
   [themeConfig, userConfig].forEach(config => {
     config.modules = config.modules || {};
     Object.keys(config.modules).forEach(module => {
@@ -517,8 +508,7 @@ function expandConfig(container, userConfig) {
       container: userConfig.modules.toolbar,
     };
   }
-  userConfig = extend(
-    true,
+  userConfig = merge(
     {},
     Quill.DEFAULTS,
     { modules: moduleConfig },

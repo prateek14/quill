@@ -1,4 +1,3 @@
-import extend from 'extend';
 import Delta from 'quill-delta';
 import {
   Attributor,
@@ -8,6 +7,7 @@ import {
   StyleAttributor,
   BlockBlot,
 } from 'parchment';
+import { BlockEmbed } from '../blots/block';
 import Quill from '../core/quill';
 import logger from '../core/logger';
 import Module from '../core/module';
@@ -36,6 +36,7 @@ const CLIPBOARD_CONFIG = [
   ['tr', matchTable],
   ['b', matchAlias.bind(matchAlias, 'bold')],
   ['i', matchAlias.bind(matchAlias, 'italic')],
+  ['strike', matchAlias.bind(matchAlias, 'strike')],
   ['style', matchIgnore],
 ];
 
@@ -220,10 +221,8 @@ function applyFormat(delta, format, value) {
     if (op.attributes && op.attributes.smarttask && format === 'list') {
       return newDelta.push(op);
     }
-    return newDelta.insert(
-      op.insert,
-      extend({}, { [format]: value }, op.attributes),
-    );
+    const formats = value ? { [format]: value } : {};
+    return newDelta.insert(op.insert, { ...formats, ...op.attributes });
   }, new Delta());
 }
 
@@ -417,9 +416,12 @@ function matchIndent(node, delta, scroll) {
     parent = parent.parentNode;
   }
   if (indent <= 0) return delta;
-  return delta.compose(
-    new Delta().retain(delta.length() - 1).retain(1, { indent }),
-  );
+  return delta.reduce((composed, op) => {
+    if (op.attributes && typeof op.attributes.indent === 'number') {
+      return composed.push(op);
+    }
+    return composed.insert(op.insert, { indent, ...(op.attributes || {}) });
+  }, new Delta());
 }
 
 function matchList(node, delta) {
@@ -427,13 +429,23 @@ function matchList(node, delta) {
   return applyFormat(delta, 'list', list);
 }
 
-function matchNewline(node, delta) {
+function matchNewline(node, delta, scroll) {
   if (!deltaEndsWith(delta, '\n')) {
-    if (
-      isLine(node) ||
-      (delta.length() > 0 && node.nextSibling && isLine(node.nextSibling))
-    ) {
-      delta.insert('\n');
+    if (isLine(node)) {
+      return delta.insert('\n');
+    }
+    if (delta.length() > 0 && node.nextSibling) {
+      let { nextSibling } = node;
+      while (nextSibling != null) {
+        if (isLine(nextSibling)) {
+          return delta.insert('\n');
+        }
+        const match = scroll.query(nextSibling);
+        if (match && match.prototype instanceof BlockEmbed) {
+          return delta.insert('\n');
+        }
+        nextSibling = nextSibling.firstChild;
+      }
     }
   }
   return delta;
@@ -444,6 +456,12 @@ function matchStyles(node, delta) {
   const style = node.style || {};
   if (style.fontStyle === 'italic') {
     formats.italic = true;
+  }
+  if (style.textDecoration === 'underline') {
+    formats.underline = true;
+  }
+  if (style.textDecoration === 'line-through') {
+    formats.strike = true;
   }
   if (
     style.fontWeight.startsWith('bold') ||

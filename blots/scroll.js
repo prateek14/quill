@@ -15,6 +15,7 @@ class Scroll extends ScrollBlot {
     this.batch = false;
     this.optimize();
     this.enable();
+    this.domNode.addEventListener('dragstart', e => this.handleDragStart(e));
   }
 
   batchStart() {
@@ -61,6 +62,10 @@ class Scroll extends ScrollBlot {
   formatAt(index, length, format, value) {
     super.formatAt(index, length, format, value);
     this.optimize();
+  }
+
+  handleDragStart(event) {
+    event.preventDefault();
   }
 
   insertAt(index, value, def) {
@@ -159,6 +164,10 @@ class Scroll extends ScrollBlot {
     if (!Array.isArray(mutations)) {
       mutations = this.observer.takeRecords();
     }
+    mutations = mutations.filter(({ target }) => {
+      const blot = this.find(target, true);
+      return blot && blot.scroll === this;
+    });
     if (mutations.length > 0) {
       this.emitter.emit(Emitter.events.SCROLL_BEFORE_UPDATE, source, mutations);
     }

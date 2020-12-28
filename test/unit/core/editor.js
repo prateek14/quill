@@ -597,6 +597,30 @@ describe('Editor', function() {
       );
     });
 
+    it('mixed list', function() {
+      const editor = this.initialize(
+        Editor,
+        `
+          <ol>
+            <li data-list="ordered">One</li>
+            <li data-list="ordered">Two</li>
+            <li data-list="bullet">Foo</li>
+            <li data-list="bullet">Bar</li>
+          </ol>
+        `,
+      );
+      expect(editor.getHTML(2, 12)).toEqualHTML(`
+        <ol>
+          <li>e</li>
+          <li>Two</li>
+        </ol>
+        <ul>
+          <li>Foo</li>
+          <li>Ba</li>
+        </ul>
+      `);
+    });
+
     it('nested list', function() {
       const editor = this.initialize(
         Editor,
@@ -661,6 +685,36 @@ describe('Editor', function() {
       `);
     });
 
+    it('partial list', function() {
+      const editor = this.initialize(
+        Editor,
+        `
+        <ol>
+          <li data-list="ordered">1111</li>
+          <li data-list="ordered" class="ql-indent-1">AAAA</li>
+          <li data-list="ordered" class="ql-indent-2">IIII</li>
+          <li data-list="ordered" class="ql-indent-1">BBBB</li>
+          <li data-list="ordered">2222</li>
+        </ol>
+        `,
+      );
+      expect(editor.getHTML(12, 12)).toEqualHTML(`
+        <ol>
+          <li>
+            <ol>
+              <li>
+                <ol>
+                  <li>II</li>
+                </ol>
+              </li>
+              <li>BBBB</li>
+            </ol>
+          </li>
+          <li>2222</li>
+        </ol>
+      `);
+    });
+
     it('text within tag', function() {
       const editor = this.initialize(Editor, '<p><a>a</a></p>');
       expect(editor.getHTML(0, 1)).toEqual('<a>a</a>');
@@ -673,9 +727,19 @@ describe('Editor', function() {
     });
 
     it('multiline code', function() {
-      const editor = this.initialize(Editor, '<p>0123</p><p>4567</p>');
-      editor.formatLine(0, 9, { 'code-block': 'javascript' });
-      expect(editor.getHTML(0, 9)).toEqual('<pre>0123\n4567</pre>');
+      const editor = this.initialize(
+        Editor,
+        '<p><br></p><p>0123</p><p><br></p><p><br></p><p>4567</p><p><br></p>',
+      );
+      const length = editor.scroll.length();
+      editor.formatLine(0, length, { 'code-block': 'javascript' });
+
+      expect(editor.getHTML(0, length)).toEqual(
+        '<pre>\n\n0123\n\n\n4567\n\n</pre>',
+      );
+      expect(editor.getHTML(1, 7)).toEqual('<pre>\n0123\n\n\n\n</pre>');
+      expect(editor.getHTML(2, 7)).toEqual('<pre>\n123\n\n\n4\n</pre>');
+      expect(editor.getHTML(5, 7)).toEqual('<pre>\n\n\n\n4567\n</pre>');
     });
   });
 });
