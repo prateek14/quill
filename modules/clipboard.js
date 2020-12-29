@@ -214,10 +214,10 @@ function applyFormat(delta, format, value) {
     }, delta);
   }
   return delta.reduce((newDelta, op) => {
-    if (op.attributes && op.attributes[format]) {
+    if (op.attributes && op.attributes.smarttask && format === 'list') {
       return newDelta.push(op);
     }
-    if (op.attributes && op.attributes.smarttask && format === 'list') {
+    if (op.attributes && op.attributes[format]) {
       return newDelta.push(op);
     }
     return newDelta.insert(
