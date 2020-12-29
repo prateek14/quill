@@ -149,7 +149,6 @@
     "trailingComma": "all"
   },
   "scripts": {
-    "prepare": "npm run build",
     "build": "npm run lint && npm run build:webpack",
     "build:webpack": "webpack --config _develop/webpack.config.js; rm dist/quill.core dist/quill.bubble dist/quill.snow",
     "build:webpackonly": "webpack --config _develop/webpack.config.js",
